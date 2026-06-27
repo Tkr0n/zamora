@@ -1,0 +1,118 @@
+'use client'
+
+import { useState } from 'react'
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Menu, X, LogOut, Map, Settings, BarChart3, Package } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
+interface AdminNavbarProps {
+  currentPage?: 'dashboard' | 'map' | 'centros' | 'settings'
+}
+
+export default function AdminNavbar({ currentPage = 'dashboard' }: AdminNavbarProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { logout, userEmail } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/')
+  }
+
+  const navItems = [
+    { href: '/admin', label: 'Dashboard', icon: BarChart3, page: 'dashboard' as const },
+    { href: '/admin/map', label: 'Mapa', icon: Map, page: 'map' as const },
+    { href: '/admin/centros', label: 'Centros', icon: Package, page: 'centros' as const },
+    { href: '/admin/settings', label: 'Configuración', icon: Settings, page: 'settings' as const },
+  ]
+
+  return (
+    <nav className="bg-sidebar border-b border-sidebar-border sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        {/* Logo and Title */}
+        <Link href="/admin" className="flex items-center gap-2">
+          <div className="w-10 h-10 bg-sidebar-primary rounded-lg flex items-center justify-center">
+            <span className="text-sidebar-primary-foreground font-bold">FC</span>
+          </div>
+          <div className="hidden md:block">
+            <h1 className="text-lg font-bold text-sidebar-foreground">FuerzaCivil</h1>
+            <p className="text-xs text-sidebar-accent-foreground">Admin Panel</p>
+          </div>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = currentPage === item.page
+            return (
+              <Link key={item.page} href={item.href}>
+                <Button
+                  variant={isActive ? 'default' : 'ghost'}
+                  className={`flex items-center gap-2 ${
+                    isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground hover:bg-sidebar-accent'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              </Link>
+            )
+          })}
+        </div>
+
+        {/* User Info and Logout */}
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-sm font-medium text-sidebar-foreground">{userEmail}</p>
+              <p className="text-xs text-sidebar-accent-foreground">Coordinador</p>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="text-sidebar-foreground hover:bg-sidebar-accent flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden md:inline">Salir</span>
+          </Button>
+
+          {/* Mobile Menu Toggle */}
+          <button className="md:hidden p-2 hover:bg-sidebar-accent rounded-lg text-sidebar-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-sidebar-border bg-sidebar-accent">
+          <div className="px-4 py-2 space-y-2">
+            {navItems.map((item) => {
+              const Icon = item.icon
+              const isActive = currentPage === item.page
+              return (
+                <Link key={item.page} href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={isActive ? 'default' : 'ghost'}
+                    className={`w-full justify-start flex items-center gap-2 ${
+                      isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </nav>
+  )
+}
