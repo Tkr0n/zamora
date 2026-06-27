@@ -4,31 +4,71 @@ import { useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AdminNavbar from '@/components/admin-navbar'
+import { LoadingState, ErrorState } from '@/components/loading-state'
+import { useAppData } from '@/lib/hooks/use-app-data'
+import { updateConfig } from '@/lib/api-client'
+import { CONFIG_APP } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CONFIG_APP } from '@/lib/mock-data'
 import { Settings, MapPin, Globe, Map } from 'lucide-react'
 
 export default function SettingsPage() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
+  const { config: apiConfig, loading, error, refresh } = useAppData()
   const [config, setConfig] = useState(CONFIG_APP)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/')
-    }
+    if (!isAuthenticated) router.push('/login')
   }, [isAuthenticated, router])
 
-  const handleSaveConfig = () => {
-    // In Phase 2, this will save to Supabase
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  useEffect(() => {
+    if (!loading && apiConfig) setConfig(apiConfig)
+  }, [apiConfig, loading])
+
+  const handleSaveConfig = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await updateConfig({
+        latitudDefault: config.ubicacion_predeterminada.latitud,
+        longitudDefault: config.ubicacion_predeterminada.longitud,
+        zoomDefault: config.ubicacion_predeterminada.zoom,
+        municipio: config.municipio,
+        estado: config.estado,
+        pais: config.pais,
+      })
+      setSaved(true)
+      await refresh()
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Error al guardar')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  if (!isAuthenticated) {
-    return null
+  if (!isAuthenticated) return null
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminNavbar currentPage="settings" />
+        <LoadingState />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminNavbar currentPage="settings" />
+        <ErrorState message={error} onRetry={refresh} />
+      </div>
+    )
   }
 
   return (
@@ -36,7 +76,6 @@ export default function SettingsPage() {
       <AdminNavbar currentPage="settings" />
 
       <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
             <Settings className="w-6 h-6 text-primary" />
@@ -47,15 +86,12 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Configuration Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Location Settings */}
           <div className="bg-card rounded-lg border border-border p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <MapPin className="w-5 h-5 text-accent" />
               <h2 className="text-xl font-semibold text-foreground">Ubicación Predeterminada</h2>
             </div>
-
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1">Latitud</label>
@@ -72,10 +108,8 @@ export default function SettingsPage() {
                       },
                     })
                   }
-                  className="bg-secondary text-foreground border-border"
                 />
               </div>
-
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1">Longitud</label>
                 <Input
@@ -91,10 +125,8 @@ export default function SettingsPage() {
                       },
                     })
                   }
-                  className="bg-secondary text-foreground border-border"
                 />
               </div>
-
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1">Zoom Predeterminado</label>
                 <Input
@@ -111,54 +143,33 @@ export default function SettingsPage() {
                       },
                     })
                   }
-                  className="bg-secondary text-foreground border-border"
                 />
               </div>
             </div>
           </div>
 
-          {/* Regional Information */}
           <div className="bg-card rounded-lg border border-border p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-5 h-5 text-accent" />
               <h2 className="text-xl font-semibold text-foreground">Información Regional</h2>
             </div>
-
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1">País</label>
-                <Input
-                  type="text"
-                  value={config.pais}
-                  onChange={(e) => setConfig({ ...config, pais: e.target.value })}
-                  className="bg-secondary text-foreground border-border"
-                />
+                <Input value={config.pais} onChange={(e) => setConfig({ ...config, pais: e.target.value })} />
               </div>
-
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1">Estado</label>
-                <Input
-                  type="text"
-                  value={config.estado}
-                  onChange={(e) => setConfig({ ...config, estado: e.target.value })}
-                  className="bg-secondary text-foreground border-border"
-                />
+                <Input value={config.estado} onChange={(e) => setConfig({ ...config, estado: e.target.value })} />
               </div>
-
               <div>
                 <label className="text-sm font-medium text-foreground block mb-1">Municipio</label>
-                <Input
-                  type="text"
-                  value={config.municipio}
-                  onChange={(e) => setConfig({ ...config, municipio: e.target.value })}
-                  className="bg-secondary text-foreground border-border"
-                />
+                <Input value={config.municipio} onChange={(e) => setConfig({ ...config, municipio: e.target.value })} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Info Box */}
         <div className="bg-primary/10 rounded-lg border border-primary/20 p-6">
           <div className="flex items-start gap-4">
             <Map className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
@@ -170,20 +181,18 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground">
                 Región: <strong>{config.municipio}, {config.estado}, {config.pais}</strong>
               </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Estos parámetros se utilizan para centrar el mapa y filtrar centros por región.
-              </p>
             </div>
           </div>
         </div>
 
-        {/* Actions */}
+        {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+
         <div className="flex gap-4">
-          <Button onClick={handleSaveConfig} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-            {saved ? 'Configuración Guardada' : 'Guardar Cambios'}
+          <Button onClick={handleSaveConfig} disabled={saving} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+            {saved ? 'Configuración Guardada' : saving ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
-          <Button variant="outline" onClick={() => setConfig(CONFIG_APP)}>
-            Restaurar Predeterminados
+          <Button variant="outline" onClick={() => setConfig(apiConfig)}>
+            Restaurar
           </Button>
         </div>
       </main>

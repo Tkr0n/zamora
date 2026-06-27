@@ -79,7 +79,7 @@ export default function LoginForm() {
 
         <div className="pt-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Demo: usa cualquier correo y contraseña (min 6 caracteres)
+            Acceso restringido a coordinadores autorizados
           </p>
         </div>
       </form>

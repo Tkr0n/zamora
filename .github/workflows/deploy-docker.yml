@@ -1,0 +1,76 @@
+name: Deploy Docker
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  COMPOSE_PROJECT_NAME: fuerzacivil
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar Docker
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Crear archivo .env
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+          JWT_AUDIENCE: ${{ secrets.JWT_AUDIENCE }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
+          WEB_PORT: ${{ secrets.WEB_PORT }}
+        run: |
+          cat > .env << EOF
+          POSTGRES_USER=${POSTGRES_USER:-postgres}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD secret is required}
+          POSTGRES_DB=${POSTGRES_DB:-fuerzacivil}
+          JWT_SECRET=${JWT_SECRET:?JWT_SECRET secret is required}
+          JWT_ISSUER=${JWT_ISSUER:-fuerzacivil}
+          JWT_AUDIENCE=${JWT_AUDIENCE:-fuerzacivil-web}
+          ADMIN_EMAIL=${ADMIN_EMAIL:?ADMIN_EMAIL secret is required}
+          ADMIN_PASSWORD=${ADMIN_PASSWORD:?ADMIN_PASSWORD secret is required}
+          PUBLIC_URL=${PUBLIC_URL:-http://localhost:8080}
+          WEB_PORT=${WEB_PORT:-8080}
+          EOF
+
+      - name: Build imágenes
+        run: docker compose build --pull
+
+      - name: Desplegar stack
+        run: docker compose up -d --remove-orphans
+
+      - name: Esperar health check
+        run: |
+          echo "Esperando que la API responda..."
+          for i in $(seq 1 30); do
+            if docker compose exec -T api curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+              echo "API healthy"
+              exit 0
+            fi
+            echo "Intento $i/30..."
+            sleep 5
+          done
+          echo "Health check falló"
+          docker compose logs api
+          exit 1
+
+      - name: Limpiar imágenes antiguas
+        run: docker image prune -f
+
+      - name: Estado final
+        run: docker compose ps

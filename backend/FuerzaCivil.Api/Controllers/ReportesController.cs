@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using NetTopologySuite.Geometries;
 using FuerzaCivil.Api.Data;
 using FuerzaCivil.Api.DTOs;
@@ -14,6 +15,7 @@ public class ReportesController : ControllerBase
     public ReportesController(AppDbContext db) => _db = db;
 
     [HttpPost]
+    [EnableRateLimiting("reportes")]
     public async Task<ActionResult<ZonaAfectadaDto>> Reportar(ReporteCiudadanoDto dto)
     {
         var entity = new ZonaAfectada

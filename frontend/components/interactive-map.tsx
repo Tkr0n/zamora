@@ -8,11 +8,12 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import PoiMarkers from './map/poi-markers'
 import Legend from './map/legend'
 import GeolocateControl from './map/geolocate-control'
-import { PuntoInteres, ZonaAfectada, CONFIG_APP } from '@/lib/mock-data'
+import { PuntoInteres, ZonaAfectada, ConfigApp, CONFIG_APP } from '@/lib/mock-data'
 
 interface InteractiveMapProps {
   puntos: PuntoInteres[]
   zonas: ZonaAfectada[]
+  config?: ConfigApp
   onPoiClick?: (punto: PuntoInteres) => void
 }
 
@@ -30,7 +31,7 @@ function buildHeatmapGeoJSON(zonas: ZonaAfectada[]): GeoJSON.FeatureCollection {
   }
 }
 
-export default function InteractiveMap({ puntos, zonas, onPoiClick }: InteractiveMapProps) {
+export default function InteractiveMap({ puntos, zonas, config = CONFIG_APP, onPoiClick }: InteractiveMapProps) {
   const mapRef = useRef<MapRef>(null)
   const heatmapAddedRef = useRef(false)
   const geolocatedRef = useRef(false)
@@ -117,9 +118,9 @@ export default function InteractiveMap({ puntos, zonas, onPoiClick }: Interactiv
         ref={mapRef}
         mapLib={maplibregl}
         initialViewState={{
-          longitude: CONFIG_APP.ubicacion_predeterminada.longitud,
-          latitude: CONFIG_APP.ubicacion_predeterminada.latitud,
-          zoom: CONFIG_APP.ubicacion_predeterminada.zoom,
+          longitude: config.ubicacion_predeterminada.longitud,
+          latitude: config.ubicacion_predeterminada.latitud,
+          zoom: config.ubicacion_predeterminada.zoom,
         }}
         style={{ width: '100%', height: '100%' }}
         mapStyle="https://tiles.openfreemap.org/styles/liberty"

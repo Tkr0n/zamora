@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, Fragment } from 'react'
-import { PuntoInteres, POI_LABELS, INSUMOS_POR_CENTRO, Insumo, prioridadColores, prioridadNombres, categoriaNombres } from '@/lib/mock-data'
+import { PuntoInteres, POI_LABELS, Insumo, prioridadColores, prioridadNombres, categoriaNombres } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Edit2, Trash2, MapPin, Phone, ChevronDown, AlertCircle } from 'lucide-react'
 
 interface CentrosTableProps {
   centros: PuntoInteres[]
+  insumosByCentro?: Record<string, Insumo[]>
   onEdit?: (centro: PuntoInteres) => void
   onDelete?: (id: string) => void
   onViewMap?: (centro: PuntoInteres) => void
@@ -15,7 +16,7 @@ interface CentrosTableProps {
 
 const PRIORIDAD_ORDER: Record<string, number> = { critica: 0, alta: 1, media: 2, baja: 3 }
 
-export default function CentrosTable({ centros, onEdit, onDelete, onViewMap, readOnly = false }: CentrosTableProps) {
+export default function CentrosTable({ centros, insumosByCentro = {}, onEdit, onDelete, onViewMap, readOnly = false }: CentrosTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const getStatusColor = (estado: string) => {
@@ -30,7 +31,7 @@ export default function CentrosTable({ centros, onEdit, onDelete, onViewMap, rea
   }
 
   const getSortedInsumos = (id: string): Insumo[] => {
-    const insumos = INSUMOS_POR_CENTRO[id] || []
+    const insumos = insumosByCentro[id] || []
     return [...insumos].sort((a, b) => PRIORIDAD_ORDER[a.prioridad] - PRIORIDAD_ORDER[b.prioridad])
   }
 

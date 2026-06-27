@@ -3,23 +3,44 @@
 import { useState, useEffect } from 'react'
 import PublicNavbar from '@/components/public-navbar'
 import CentrosTable from '@/components/centros-table'
-import { PUNTOS_INTERES, PuntoInteres } from '@/lib/mock-data'
+import { LoadingState, ErrorState } from '@/components/loading-state'
+import { useAppData } from '@/lib/hooks/use-app-data'
+import { PuntoInteres } from '@/lib/mock-data'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
 export default function PublicCentrosPage() {
+  const { puntos, insumosByCentro, loading, error, refresh } = useAppData()
   const [searchTerm, setSearchTerm] = useState('')
-  const [filteredCentros, setFilteredCentros] = useState<PuntoInteres[]>(PUNTOS_INTERES)
+  const [filteredCentros, setFilteredCentros] = useState<PuntoInteres[]>([])
 
   useEffect(() => {
-    const filtered = PUNTOS_INTERES.filter(
+    const filtered = puntos.filter(
       (centro) =>
         centro.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         centro.ciudad.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        centro.responsable.toLowerCase().includes(searchTerm.toLowerCase())
+        centro.responsable.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     setFilteredCentros(filtered)
-  }, [searchTerm])
+  }, [searchTerm, puntos])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNavbar currentPage="centros" />
+        <LoadingState />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNavbar currentPage="centros" />
+        <ErrorState message={error} onRetry={refresh} />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,23 +65,27 @@ export default function PublicCentrosPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-card rounded-lg p-4 border border-border">
             <p className="text-sm text-muted-foreground mb-1">Total de Centros</p>
-            <p className="text-2xl font-bold text-foreground">{PUNTOS_INTERES.length}</p>
+            <p className="text-2xl font-bold text-foreground">{puntos.length}</p>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <p className="text-sm text-muted-foreground mb-1">Activos</p>
-            <p className="text-2xl font-bold text-green-500">{PUNTOS_INTERES.filter((c) => c.estado_operativo === 'activo').length}</p>
+            <p className="text-2xl font-bold text-green-500">
+              {puntos.filter((c) => c.estado_operativo === 'activo').length}
+            </p>
           </div>
           <div className="bg-card rounded-lg p-4 border border-border">
             <p className="text-sm text-muted-foreground mb-1">Beneficiarios Totales</p>
-            <p className="text-2xl font-bold text-foreground">{PUNTOS_INTERES.reduce((sum, c) => sum + c.beneficiarios, 0)}</p>
+            <p className="text-2xl font-bold text-foreground">
+              {puntos.reduce((sum, c) => sum + c.beneficiarios, 0)}
+            </p>
           </div>
         </div>
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Mostrando <strong>{filteredCentros.length}</strong> de <strong>{PUNTOS_INTERES.length}</strong> centros
+            Mostrando <strong>{filteredCentros.length}</strong> de <strong>{puntos.length}</strong> centros
           </p>
-          <CentrosTable centros={filteredCentros} readOnly />
+          <CentrosTable centros={filteredCentros} insumosByCentro={insumosByCentro} readOnly />
         </div>
 
         {filteredCentros.length === 0 && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { PuntoInteres, ESTADISTICAS } from '@/lib/mock-data'
+import { PuntoInteres } from '@/lib/mock-data'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Activity, Users, Package, TrendingUp } from 'lucide-react'
 

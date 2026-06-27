@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FuerzaCivil.Api.Data;
@@ -13,6 +14,7 @@ public class EstadisticasController : ControllerBase
     public EstadisticasController(AppDbContext db) => _db = db;
 
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<EstadisticasDto>> Get()
     {
         var puntos = await _db.PuntosInteres.ToListAsync();

@@ -4,21 +4,61 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import PublicNavbar from '@/components/public-navbar'
 import SuppliesPanel from '@/components/supplies-panel'
-import { PUNTOS_INTERES, ZONAS_AFECTADAS, PuntoInteres, CONFIG_APP, INSUMOS_POR_CENTRO } from '@/lib/mock-data'
-import { X, Phone, MapPin } from 'lucide-react'
+import ReporteDialog from '@/components/reporte-dialog'
+import { LoadingState, ErrorState } from '@/components/loading-state'
+import { useAppData } from '@/lib/hooks/use-app-data'
+import { PuntoInteres } from '@/lib/mock-data'
+import { X, Phone, MapPin, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
-const InteractiveMap = dynamic(() => import('@/components/interactive-map'), { ssr: false, loading: () => <div className="w-full h-screen bg-secondary animate-pulse" /> })
+const InteractiveMap = dynamic(() => import('@/components/interactive-map'), {
+  ssr: false,
+  loading: () => <div className="w-full h-screen bg-secondary animate-pulse" />,
+})
 
 export default function Page() {
+  const { puntos, zonas, insumosByCentro, config, loading, error, refresh } = useAppData()
   const [selectedPoi, setSelectedPoi] = useState<PuntoInteres | null>(null)
   const [showSupplies, setShowSupplies] = useState(false)
+  const [showReporte, setShowReporte] = useState(false)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNavbar currentPage="mapa" />
+        <LoadingState />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PublicNavbar currentPage="mapa" />
+        <ErrorState message={error} onRetry={refresh} />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <PublicNavbar currentPage="mapa" />
 
       <div className="relative h-[calc(100vh-80px)]">
-        <InteractiveMap puntos={PUNTOS_INTERES} zonas={ZONAS_AFECTADAS} onPoiClick={setSelectedPoi} />
+        <InteractiveMap
+          puntos={puntos}
+          zonas={zonas}
+          config={config}
+          onPoiClick={setSelectedPoi}
+        />
+
+        <Button
+          onClick={() => setShowReporte(true)}
+          className="absolute left-4 top-4 z-40 bg-orange-500 hover:bg-orange-600 text-white flex items-center gap-2 shadow-lg"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Reportar zona
+        </Button>
 
         {selectedPoi && (
           <div className="absolute right-4 top-4 w-96 bg-card rounded-lg border border-border shadow-lg max-h-[90vh] z-50 flex flex-col">
@@ -142,15 +182,22 @@ export default function Page() {
                 </div>
               ) : (
                 <SuppliesPanel
-                  insumos={INSUMOS_POR_CENTRO[selectedPoi.id] || []}
+                  insumos={insumosByCentro[selectedPoi.id] || []}
                   centroNombre={selectedPoi.nombre}
                 />
               )}
             </div>
           </div>
         )}
-
       </div>
+
+      <ReporteDialog
+        open={showReporte}
+        onClose={() => setShowReporte(false)}
+        onReported={refresh}
+        latitud={config.ubicacion_predeterminada.latitud}
+        longitud={config.ubicacion_predeterminada.longitud}
+      />
     </div>
   )
 }
